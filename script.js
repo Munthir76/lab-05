@@ -442,7 +442,95 @@ const data = [
     }
 ];
 
+const playerRows = document.getElementById('player-rows');
+const searchInput = document.getElementById('search');
+const teamFilter = document.getElementById('team-filter');
+const darkModeToggle = document.getElementById('dark-mode-toggle');
+const tableHeaders = document.querySelectorAll('#player-stats th');
 
+function getTeamCode(teamString) {
+    const match = teamString.match(/\(([^)]+)\)/);
+    return match ? match[1] : teamString;
+}
+
+function populateTable(players) {
+    playerRows.innerHTML = '';
+    players.forEach(player => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${player.name}</td>
+            <td>${getTeamCode(player.team)}</td>
+            <td>${player.points}</td>
+            <td>${player.rebounds}</td>
+            <td>${player.assists}</td>
+        `;
+        playerRows.appendChild(tr);
+    });
+}
+
+function populateTeamFilter(players) {
+    const teams = [...new Set(players.map(p => getTeamCode(p.team)))].sort();
+    
+   
+    teamFilter.innerHTML = '<option value="all">All</option>';
+    
+    teams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team;
+        option.textContent = team;
+        teamFilter.appendChild(option);
+    });
+}
+
+
+function applyFilters() {
+    const query = searchInput.value.toLowerCase().trim();
+    const selectedTeam = teamFilter.value;
+
+    const filteredPlayers = data.filter(player => {
+        const teamCode = getTeamCode(player.team);
+        const matchesName = player.name.toLowerCase().includes(query);
+        const matchesTeam = selectedTeam === 'all' || teamCode === selectedTeam;
+        return matchesName && matchesTeam;
+    });
+
+    populateTable(filteredPlayers);
+}
+
+
+searchInput.addEventListener('input', applyFilters);
+teamFilter.addEventListener('change', applyFilters);
+
+
+darkModeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+});
+
+
+let sortOrder = 1;
+tableHeaders.forEach((th, index) => {
+    th.addEventListener('click', () => {
+        const keys = ['name', 'team', 'points', 'rebounds', 'assists'];
+        const key = keys[index];
+        
+        data.sort((a, b) => {
+            let valA = (key === 'team') ? getTeamCode(a[key]) : a[key];
+            let valB = (key === 'team') ? getTeamCode(b[key]) : b[key];
+            
+            if (typeof valA === 'string') {
+                return sortOrder * valA.localeCompare(valB);
+            }
+            return sortOrder * (valA - valB);
+        });
+        
+        sortOrder *= -1; 
+        applyFilters();
+    });
+});
+
+
+populateTeamFilter(data);
+populateTable(data);
 
 
 
